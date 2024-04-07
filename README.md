@@ -127,13 +127,10 @@ Kittens Carousel is a static website application deployed on AWS Simple Storage 
 
 - Step 4: Deploy your application on AWS Cloud using Cloudformation template
 
-- Step 5: Upload your application files into S3 bucket from your local git repo
+- Step 5: Customize your application files
 
-## Notes
+- Step 6: Upload your application files into S3 bucket from your local git repo
 
-- Customize the application by hard-coding your name instead of `student_name` within `index.html`.
-
-- Use `bash upload-script.sh` to invoke upload script.
 
 ## Resources
 

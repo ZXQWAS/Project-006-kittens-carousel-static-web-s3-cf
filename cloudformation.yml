@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: |
+  Kittens Carousel is a static website application deployed on AWS Simple Storage Service (S3), served through Cloudfront and Route 53 using AWS Cloudformation Service.
+
+# Parameters:
+  
+Resources:
+  # s3 bucket
+  MyS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: kittens.testnets.click
+
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+      Tags: 
+        - Key: Name
+          Value: kittens-nametag
+      VersioningConfiguration:
+        Status: Enabled
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+
+  # bucket policy, no ACL
+  MyBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref MyS3Bucket # Required
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 's3:GetObject'
+            Effect: Allow
+            Resource: !Join 
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref MyS3Bucket
+                - /*
+            Principal: '*'
+            Sid: PublicReadGetObject
+
+
+  # cloudfront distro
+  MyCloudfrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Ref MyS3Bucket
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+          ForwardedValues:
+            Cookies:
+              Forward: none
+            QueryString: true
+          TargetOriginId: KittensOrigin
+          ViewerProtocolPolicy: allow-all
+        DefaultRootObject: index.html
+        Enabled: true
+        HttpVersion: http2
+        Origins:
+          - CustomOriginConfig:
+              OriginProtocolPolicy: http-only
+            DomainName: kittens.testnets.click.s3-website.us-east-1.amazonaws.com
+            Id: KittensOrigin
+        ViewerCertificate:
+          AcmCertificateArn: arn:aws:acm:us-east-1:851725444871:certificate/7bc2e969-ca5d-488d-8090-7ad6ffc51753
+          SslSupportMethod: sni-only
+
+
+  # route53, DNS record (s3 FQDN alias)
+  MyDNSRecord:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: Z0836694YHFL5HD9AVBA # wawawa
+      RecordSets:
+        - AliasTarget:
+            DNSName: !GetAtt MyCloudfrontDistribution.DomainName
+            HostedZoneId: Z2FDTNDATAQYW2 # wawawa
+          Name: !Ref MyS3Bucket
+          Type: A
+
+
+
+
+Outputs:
+  MyBucketWebsiteURL:
+    Description: The URL of the static website.
+    Value: !GetAtt MyS3Bucket.WebsiteURL
+
+  FullyQualifiedDomainName:
+    Description: FQDN
+    Value: !Ref MyS3Bucket
